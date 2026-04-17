@@ -4,7 +4,7 @@ import { fetchAniListUserList } from './anilist.js';
 import { fetchMalFullAnimeList, fetchMalFullMangaList, fetchMalProfile } from './mal.js';
 import { fetchRelationsForMediaList, enrichMediaWithBasicInfo } from './jikan.js';
 import { formatAniListMedia, formatMalAnimeNode, formatMalMangaNode } from '../utils/mediaFormatter.js';
-import { getHighestPriorityRelation, isAdaptationRelation } from '../utils/relationPriority.js';
+import { getHighestPriorityRelation, isAdaptationRelation, isSequelRelation } from '../utils/relationPriority.js';
 import { buildFranchises } from '../utils/franchiseBuilder.js';
 import { buildMappingsFromMedia } from '../utils/idMapper.js';
 import { cache } from './cache.js';
@@ -67,13 +67,17 @@ export async function processCheck(params: {
     fromEntries: Array<{ mediaId: number; relationType: string }>;
   }>();
 
+  // Only scan relations from COMPLETED entries
   for (const [mediaId, media] of watchedMap) {
+    if (media.user_list_entry?.status !== 'COMPLETED') continue;
+
     for (const rel of media.relations) {
       const relatedId = rel.media.id;
 
+      // Check against ALL list entries (watching, planning, dropped, etc.)
       if (!watchedMap.has(relatedId)) {
-        // Filter adaptations if not requested
-        if (!params.include_adaptations && isAdaptationRelation(rel.relation_type)) {
+        // Only consider SEQUEL relations as "missing sequel"
+        if (!isSequelRelation(rel.relation_type)) {
           continue;
         }
 
@@ -149,7 +153,6 @@ async function processAniList(
     try {
       const { entries } = await fetchAniListUserList(params.user_id, type, params.token);
       for (const entry of entries) {
-        if (entry.listEntry.status !== 'COMPLETED') continue;
         const unified = formatAniListMedia(entry.media, entry.listEntry);
         watchedMap.set(entry.media.id, unified);
         buildMappingsFromMedia([entry.media]);
@@ -179,10 +182,12 @@ async function processMal(
     console.log(`[Processor] Got ${animeList.length} anime entries`);
 
     for (const entry of animeList) {
-      if (entry.list_status.status !== 'completed') continue;
       const unified = formatMalAnimeNode(entry.node, entry.list_status);
       watchedMap.set(entry.node.id, unified);
-      animeIdsNeedingRelations.push(entry.node.id);
+      // Only fetch relations for COMPLETED entries
+      if (entry.list_status.status === 'completed') {
+        animeIdsNeedingRelations.push(entry.node.id);
+      }
     }
   }
 
@@ -192,10 +197,12 @@ async function processMal(
     console.log(`[Processor] Got ${mangaList.length} manga entries`);
 
     for (const entry of mangaList) {
-      if (entry.list_status.status !== 'completed') continue;
       const unified = formatMalMangaNode(entry.node, entry.list_status);
       watchedMap.set(entry.node.id, unified);
-      mangaIdsNeedingRelations.push(entry.node.id);
+      // Only fetch relations for COMPLETED entries
+      if (entry.list_status.status === 'completed') {
+        mangaIdsNeedingRelations.push(entry.node.id);
+      }
     }
   }
 
