@@ -1,0 +1,100 @@
+name: Deploy Missing Sequel API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "bun.lock"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "tsconfig.json"
+      - ".github/workflows/deploy-missing-sequel.yml"
+  workflow_dispatch:
+    inputs:
+      rebuild:
+        description: "Force rebuild image (not just restart)"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Deploy source files to server
+      - name: Deploy Source Files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "src/,package.json,bun.lock,tsconfig.json,Dockerfile,docker-compose.yml"
+          target: "/root/missing-sequel-api/"
+
+      # Build and restart container
+      - name: Build & Restart Container
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /root/missing-sequel-api
+
+            echo "📦 Creating .env if missing..."
+            if [ ! -f .env ]; then
+              cat > .env << 'ENVEOF'
+            NODE_ENV=production
+            HOST=0.0.0.0
+            PORT=3002
+            MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}
+            ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}
+            ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}
+            API_KEY=${{ secrets.API_KEY }}
+            APP_ID=anymex
+            DB_PATH=/app/data/sequel-api.db
+            ENVEOF
+              echo "✅ .env created from secrets"
+            fi
+
+            echo "🐳 Building Docker image..."
+            docker compose build --no-cache
+
+            echo "🔄 Restarting container..."
+            docker compose down
+            docker compose up -d
+
+            echo "⏳ Waiting for health check (15s)..."
+            sleep 15
+
+      # Verify
+      - name: Verify Deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /root/missing-sequel-api
+
+            echo "📊 Container status:"
+            docker compose ps
+
+            echo ""
+            echo "📈 Recent logs:"
+            docker compose logs --tail=20
+
+            echo ""
+            echo "🏥 Health check:"
+            curl -sf http://localhost:3002/api/health | head -c 200 || echo "❌ Health check failed!"
+
+            echo ""
+            echo "✅ Deploy complete"
