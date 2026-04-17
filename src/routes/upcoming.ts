@@ -48,7 +48,7 @@ upcoming.post('/', async (c) => {
           type: u.upcoming.type,
           format: u.upcoming.format,
           status: u.upcoming.status,
-          cover_image: u.upcoming.cover_image?.extra_large || null,
+          cover_image: u.upcoming.cover_image?.extra_large || u.upcoming.cover_image?.large || u.upcoming.cover_image?.medium || null,
           episodes: u.upcoming.episodes,
           chapters: u.upcoming.chapters,
           average_score: u.upcoming.average_score,

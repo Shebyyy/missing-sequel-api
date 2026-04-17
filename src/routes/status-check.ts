@@ -43,7 +43,7 @@ statusCheck.post('/', async (c) => {
           type: r.media.type,
           format: r.media.format,
           status: r.media.status,
-          cover_image: r.media.cover_image?.extra_large || null,
+          cover_image: r.media.cover_image?.extra_large || r.media.cover_image?.large || r.media.cover_image?.medium || null,
           episodes: r.media.episodes,
           chapters: r.media.chapters,
           average_score: r.media.average_score,
