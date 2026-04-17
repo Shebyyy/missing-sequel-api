@@ -38,3 +38,7 @@ export function getHighestPriorityRelation(relations: Array<{ relationType: stri
 export function isAdaptationRelation(relationType: string): boolean {
   return relationType === 'ADAPTATION' || relationType === 'SOURCE';
 }
+
+export function isSequelRelation(relationType: string): boolean {
+  return relationType === 'SEQUEL';
+}
