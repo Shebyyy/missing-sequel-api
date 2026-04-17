@@ -1,0 +1,26 @@
+{
+  "name": "missing-sequel-api",
+  "version": "1.0.0",
+  "description": "API that scans AniList/MAL lists and finds missing sequels, prequels, spin-offs + status tracking",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "db:push": "bun run src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.14",
+    "better-sqlite3": "^11.8.0",
+    "hono": "^4.7.0",
+    "lru-cache": "^11.1.0",
+    "node-cron": "^3.0.3",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.0.0",
+    "@types/node-cron": "^3.0.11",
+    "bun-types": "^1.2.0",
+    "typescript": "^5.7.0"
+  }
+}

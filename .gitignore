@@ -1,0 +1,10 @@
+node_modules/
+dist/
+data/
+*.db
+*.db-wal
+*.db-shm
+.env
+test-results/
+worklog.md
+run-mal-tests.ts
