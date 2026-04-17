@@ -24,7 +24,7 @@ export interface FranchiseRequest {
   platform: Platform;
   media_id: number;
   mal_id?: number;
-  include_full_info?: boolean;
+  compact?: boolean;
 }
 
 // User info request

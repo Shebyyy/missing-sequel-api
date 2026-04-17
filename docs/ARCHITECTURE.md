@@ -7,7 +7,7 @@ How Missing Sequel API works internally.
 ## Overview
 
 ```
-AnymeX App → HTTPS → VPS:3002 → Hono Router → Services → External APIs
+AnymeX App → HTTP → VPS:3002 → Hono Router → Services → External APIs
                                     ↓
                               SQLite DB (volume)
 ```
@@ -31,7 +31,36 @@ AnymeX App → HTTPS → VPS:3002 → Hono Router → Services → External APIs
       - 2 retries on failure
    d. Compare user's list against related media
    e. Separate: missing vs upcoming
-5. Return unified response
+5. If compact=true → strip response to IDs, titles, covers
+6. Return response
+```
+
+---
+
+## Compact Mode
+
+All media-returning endpoints support `compact` parameter (default: `true`).
+
+```
+Full Response (compact=false):
+  - All title variants (romaji, english, native)
+  - cover_image (large + medium)
+  - banner_image
+  - description
+  - genres, tags, studios, producers, authors
+  - external_links
+  - relations array
+  - synonyms
+
+Compact Response (compact=true):
+  - title.preferred
+  - id, id_mal, id_anilist
+  - type, format, status
+  - cover_image (medium or large)
+  - episodes / chapters
+  - average_score
+  - start_date
+  - relation type (for check/upcoming)
 ```
 
 ---
@@ -203,8 +232,8 @@ User list: [anime_1, anime_2, ..., anime_1625]
 └─────────────────────────────────────────────┘
 ```
 
-- Multi-stage Dockerfile (builder → slim runtime)
+- Multi-stage Dockerfile (builder with Python/make/g++ → slim runtime)
 - `dumb-init` for proper signal handling
-- Health check every 30s
+- Health check every 30s (`GET /api/health`)
 - Auto-migration on startup (`bun run src/db/migrate.ts`)
-- Log rotation (10MB × 3 files)
+- Log rotation (10MB x 3 files)

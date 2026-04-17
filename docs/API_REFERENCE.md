@@ -2,22 +2,27 @@
 
 Complete endpoint documentation for Missing Sequel API.
 
+**Base URL:** `http://anymex.duckdns.org:3002`
+
 ---
-
-## Base URL
-
-```
-http://your-vps-ip:3002
-```
 
 ## Authentication
 
-All endpoints except `/api/health` require an API key sent via header:
+All endpoints except `/api/health` require an API key:
 
 ```
 X-API-Key: your-api-key
 X-App-ID: anymex (optional, for rate limiting per app)
 ```
+
+## Compact Mode
+
+All endpoints that return media data support `compact` parameter (default: `true`).
+
+| `compact` | Response |
+|---|---|
+| `true` (default) | Lightweight — IDs, titles, covers, scores, dates |
+| `false` | Full — covers, banners, descriptions, genres, tags, studios, external links, relations |
 
 ---
 
@@ -25,14 +30,8 @@ X-App-ID: anymex (optional, for rate limiting per app)
 
 ### `GET /api/health`
 
-Public health check.
+Public health check. No auth required.
 
-**Request:**
-```
-GET /api/health
-```
-
-**Response:** `200 OK`
 ```json
 {
   "success": true,
@@ -47,24 +46,20 @@ GET /api/health
 
 ### `POST /api/check`
 
-Scan a user's list for missing sequels, prequels, spin-offs, and other related media.
+Scan a user's list for missing sequels, prequels, spin-offs.
 
-**Request:**
-```
-POST /api/check
-X-API-Key: your-api-key
-Content-Type: application/json
-```
+**Body:**
 
 ```json
 {
   "platform": "anilist",
   "user_id": 12345,
-  "token": "optional-anilist-token",
+  "token": "optional-token-for-private-lists",
   "media_type": "ALL",
   "include_upcoming": true,
   "include_adaptations": false,
-  "sort_by": "relation_priority"
+  "sort_by": "relation_priority",
+  "compact": true
 }
 ```
 
@@ -79,96 +74,49 @@ Content-Type: application/json
 | `include_upcoming` | `boolean` | No | `true` | Include upcoming/not-yet-aired media |
 | `include_adaptations` | `boolean` | No | `false` | Include cross-type adaptations (anime↔manga) |
 | `sort_by` | `relation_priority` \| `release_date` \| `popularity` \| `score` | No | `relation_priority` | How to sort missing media |
+| `compact` | `boolean` | No | `true` | Lightweight response. Set `false` for full data |
 
-**Response:** `200 OK`
+**Response (compact=true):**
+
 ```json
 {
   "success": true,
-  "user": {
-    "id": 12345,
-    "username": "example",
-    "platform": "anilist",
-    "avatar": { "large": "https://...", "medium": "https://..." }
-  },
-  "total_entries": 1625,
-  "entries_with_relations": 1265,
-  "total_missing": 1771,
+  "user": { "id": 12345, "username": "example", "platform": "anilist" },
+  "total_entries": 1771,
+  "total_upcoming": 92,
   "missing": [
     {
-      "from_media": {
-        "id": "anilist_16498",
-        "id_anilist": 16498,
-        "id_mal": 32281,
-        "title": { "preferred": "Kimetsu no Yaiba", "english": "Demon Slayer", "romaji": "Kimetsu no Yaiba", "native": "鬼滅の刃" },
-        "type": "ANIME",
-        "format": "TV",
-        "status": "FINISHED",
-        "episodes": 26,
-        "average_score": 84,
-        "cover_image": "https://...",
-        "user_status": "COMPLETED"
-      },
-      "missing_media": [
-        {
-          "id": "anilist_11757",
-          "id_anilist": 11757,
-          "id_mal": 29951,
-          "title": { "preferred": "Kimetsu no Yaiba: Mugen Train-hen" },
-          "type": "ANIME",
-          "format": "MOVIE",
-          "status": "FINISHED",
-          "episodes": 1,
-          "average_score": 87,
-          "cover_image": "https://...",
-          "relation_type": "SEQUEL",
-          "relation_priority": 1
-        }
-      ]
+      "from": { "id": 16498, "title": "Demon Slayer", "type": "ANIME", "format": "TV", "status": "COMPLETED" },
+      "missing": { "id": 11757, "id_mal": 29951, "id_anilist": 11757, "title": "Mugen Train", "type": "ANIME", "format": "MOVIE", "status": "FINISHED", "cover_image": "https://...", "episodes": 1, "average_score": 87, "start_date": { "year": 2021, "month": 1, "day": 1 } },
+      "relation": "SEQUEL"
     }
   ],
   "upcoming": [
-    {
-      "id": "anilist_143562",
-      "id_anilist": 143562,
-      "title": { "preferred": "Kimetsu no Yaiba: Infinity Castle-hen" },
-      "type": "ANIME",
-      "format": "TV",
-      "status": "NOT_YET_RELEASED",
-      "episodes": null,
-      "average_score": null,
-      "cover_image": "https://...",
-      "relation_type": "SEQUEL",
-      "from_media_title": "Kimetsu no Yaiba: Hashira Training-hen"
-    }
+    { "id": 143562, "id_mal": 53540, "id_anilist": 143562, "title": "...", "type": "ANIME", "format": "TV", "status": "NOT_YET_RELEASED", "cover_image": "https://...", "episodes": null, "start_date": null, "relation": "SEQUEL", "from_title": "..." }
   ],
   "response_time_ms": 110000
 }
 ```
 
-**Error Responses:**
-
-| Code | Status | When |
-|---|---|---|
-| `INVALID_REQUEST` | 400 | Missing or invalid fields |
-| `USER_NOT_FOUND` | 404 | User doesn't exist |
-| `LIST_PRIVATE` | 403 | Private list without token |
-| `INVALID_TOKEN` | 401 | Token expired or wrong |
-| `TOKEN_MISMATCH` | 403 | Token belongs to different user |
+**Errors:** `INVALID_REQUEST` (400), `USER_NOT_FOUND` (404), `LIST_PRIVATE` (403), `INVALID_TOKEN` (401), `TOKEN_MISMATCH` (403)
 
 ---
 
 ### `POST /api/upcoming`
 
-Get upcoming sequels only. Shorthand for `/api/check` with forced settings.
+Get upcoming sequels only. Shorthand for `/api/check` with `include_upcoming: true` and `sort_by: release_date` forced.
 
-**Request:** Same body as `/api/check` (without `include_upcoming` and `sort_by`).
+**Body:** Same as `/api/check` (minus `include_upcoming` and `sort_by`).
 
-**Response:** `200 OK`
+**Response (compact=true):**
+
 ```json
 {
   "success": true,
-  "user": { "...": "..." },
-  "upcoming": [ "..." ],
+  "user": { "id": 12345, "username": "example", "platform": "anilist" },
+  "upcoming": [
+    { "id": 143562, "title": "...", "type": "ANIME", "format": "TV", "status": "NOT_YET_RELEASED", "cover_image": "https://...", "episodes": null, "start_date": null, "relation": "SEQUEL", "from_title": "..." }
+  ],
   "total_upcoming": 92,
   "response_time_ms": 110000
 }
@@ -180,12 +128,13 @@ Get upcoming sequels only. Shorthand for `/api/check` with forced settings.
 
 Get complete franchise timeline for a specific media.
 
-**Request:**
+**Body:**
+
 ```json
 {
   "platform": "anilist",
   "media_id": 16498,
-  "include_full_info": true
+  "compact": true
 }
 ```
 
@@ -194,9 +143,10 @@ Get complete franchise timeline for a specific media.
 | `platform` | `anilist` \| `mal` | Yes | — | Platform |
 | `media_id` | `number` | Yes | — | AniList media ID |
 | `mal_id` | `number` | No | — | MAL media ID (alternative) |
-| `include_full_info` | `boolean` | No | `true` | Return full media details or summary |
+| `compact` | `boolean` | No | `true` | Lightweight response. Set `false` for full data |
 
-**Response:** `200 OK`
+**Response (compact=true):**
+
 ```json
 {
   "success": true,
@@ -204,17 +154,7 @@ Get complete franchise timeline for a specific media.
     "id": "franchise_16498",
     "name": "Kimetsu no Yaiba",
     "entries": [
-      {
-        "id": "anilist_16498",
-        "title": { "preferred": "Kimetsu no Yaiba" },
-        "type": "ANIME",
-        "format": "TV",
-        "status": "FINISHED",
-        "episodes": 26,
-        "start_date": { "year": 2019, "month": 4, "day": 6 },
-        "average_score": 84,
-        "relations": [ "..." ]
-      }
+      { "id": 16498, "id_mal": 32281, "id_anilist": 16498, "title": { "preferred": "Kimetsu no Yaiba" }, "type": "ANIME", "format": "TV", "status": "FINISHED", "episodes": 26, "chapters": null, "average_score": 84, "cover_image": "https://...", "start_date": { "year": 2019, "month": 4, "day": 6 } }
     ],
     "total_entries": 8
   }
@@ -225,9 +165,10 @@ Get complete franchise timeline for a specific media.
 
 ### `POST /api/user`
 
-Get user profile with statistics.
+Get user profile with list statistics. Already lightweight — no `compact` needed.
 
-**Request:**
+**Body:**
+
 ```json
 {
   "platform": "anilist",
@@ -236,7 +177,8 @@ Get user profile with statistics.
 }
 ```
 
-**Response:** `200 OK`
+**Response:**
+
 ```json
 {
   "success": true,
@@ -248,23 +190,10 @@ Get user profile with statistics.
     "platform": "anilist",
     "avatar": { "large": "https://...", "medium": "https://..." },
     "banner": "https://...",
-    "options": {
-      "title_language": "romaji",
-      "display_adult_content": false,
-      "profile_color": "#2d3436"
-    },
+    "options": { "title_language": "romaji", "display_adult_content": false, "profile_color": "#2d3436" },
     "stats": {
-      "anime": {
-        "total": 500,
-        "watching": 10,
-        "completed": 400,
-        "on_hold": 30,
-        "dropped": 20,
-        "plan_to_watch": 40,
-        "total_episodes_watched": 8000,
-        "mean_score": 7.5
-      },
-      "manga": { "..." }
+      "anime": { "total": 500, "watching": 10, "completed": 400, "on_hold": 30, "dropped": 20, "plan_to_watch": 40, "total_episodes_watched": 8000, "mean_score": 7.5 },
+      "manga": { "total": 100, "reading": 5, "completed": 80, "on_hold": 5, "dropped": 5, "plan_to_read": 5, "total_chapters_read": 3000, "mean_score": 7.2 }
     }
   }
 }
@@ -276,35 +205,28 @@ Get user profile with statistics.
 
 Find media that finished airing/publishing but user hasn't marked as completed.
 
-**Request:**
+**Body:**
+
 ```json
 {
   "platform": "anilist",
   "user_id": 12345,
   "token": "optional-token",
-  "media_type": "ANIME"
+  "media_type": "ANIME",
+  "compact": true
 }
 ```
 
-**Response:** `200 OK`
+**Response (compact=true):**
+
 ```json
 {
   "success": true,
   "user_id": 12345,
   "platform": "anilist",
+  "summary": { "total_in_list": 500, "finished_not_completed": 15 },
   "finished_not_completed": [
-    {
-      "media_id": 16498,
-      "title": "Kimetsu no Yaiba",
-      "type": "ANIME",
-      "format": "TV",
-      "episodes": 26,
-      "user_progress": 20,
-      "remaining": 6,
-      "user_status": "WATCHING",
-      "media_status": "FINISHED",
-      "end_date": { "year": 2019, "month": 6, "day": 30 }
-    }
+    { "id": 16498, "id_mal": 32281, "id_anilist": 16498, "title": "Kimetsu no Yaiba", "type": "ANIME", "format": "TV", "status": "FINISHED", "cover_image": "https://...", "episodes": 26, "chapters": null, "user_status": "WATCHING", "progress": 20, "remaining": 6 }
   ],
   "total": 15,
   "response_time_ms": 5000
@@ -317,7 +239,8 @@ Find media that finished airing/publishing but user hasn't marked as completed.
 
 Register for periodic status notifications.
 
-**Request:**
+**Body:**
+
 ```json
 {
   "platform": "anilist",
@@ -335,7 +258,8 @@ Register for periodic status notifications.
 | `webhook_url` | `string` | No | — | Webhook URL for notifications |
 | `check_interval_hours` | `number` | No | `6` | Interval in hours (1–168) |
 
-**Response:** `200 OK`
+**Response:**
+
 ```json
 {
   "success": true,
@@ -356,7 +280,8 @@ Register for periodic status notifications.
 
 Get tracking status and recent notifications.
 
-**Request:**
+**Body:**
+
 ```json
 {
   "platform": "anilist",
@@ -364,7 +289,8 @@ Get tracking status and recent notifications.
 }
 ```
 
-**Response:** `200 OK`
+**Response:**
+
 ```json
 {
   "success": true,
@@ -382,14 +308,7 @@ Get tracking status and recent notifications.
     "registered_at": "2025-01-01T00:00:00.000Z"
   },
   "recent_notifications": [
-    {
-      "sent_at": "2025-01-01T06:00:00.000Z",
-      "media_id": 16498,
-      "media_title": "Kimetsu no Yaiba",
-      "media_type": "ANIME",
-      "user_status": "WATCHING",
-      "remaining": 6
-    }
+    { "sent_at": "2025-01-01T06:00:00.000Z", "media_id": 16498, "media_title": "Kimetsu no Yaiba", "media_type": "ANIME", "user_status": "WATCHING", "remaining": 6 }
   ]
 }
 ```
@@ -400,7 +319,8 @@ Get tracking status and recent notifications.
 
 Stop tracking a user.
 
-**Request:**
+**Body:**
+
 ```json
 {
   "platform": "anilist",
@@ -408,12 +328,11 @@ Stop tracking a user.
 }
 ```
 
-**Response:** `200 OK`
+**Response:** `404 NOT_REGISTERED` if user wasn't being tracked.
+
 ```json
 {
   "success": true,
   "message": "Tracking stopped for user 12345 on anilist"
 }
 ```
-
-**Error:** `404 NOT_REGISTERED` if user wasn't being tracked.

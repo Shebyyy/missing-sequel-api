@@ -34,17 +34,9 @@ Your VPS root user SSH password.
 
 Your MAL API Client ID.
 
-```
-5372c21d7706e24a124e8ee1fecc5c93
-```
-
 ### `API_KEY`
 
 Any strong string — this is what clients (AnymeX) send in the `X-API-Key` header.
-
-```
-xK9mP2vL7nQ4wR8-anything-secure
-```
 
 ---
 
@@ -86,19 +78,29 @@ They run in completely separate Docker containers with separate networks and vol
 
 ---
 
-## First-Time Verification
+## Firewall
 
-After first deploy, check:
+Open port 3002 on your VPS:
+
+```bash
+sudo ufw allow 3002/tcp
+```
+
+Also check your cloud provider dashboard (Oracle Cloud, AWS, DigitalOcean, etc.) for a security group / network firewall — add an inbound rule for TCP port 3002.
+
+---
+
+## First-Time Verification
 
 ```bash
 # Health check
 curl http://YOUR_VPS_IP:3002/api/health
 
-# Test with API key
+# Test with API key (compact mode)
 curl -X POST http://YOUR_VPS_IP:3002/api/check \
   -H "X-API-Key: your-api-key" \
   -H "Content-Type: application/json" \
-  -d '{"platform":"mal","user_id":"ASheby"}'
+  -d '{"platform":"mal","user_id":"ASheby","media_type":"ANIME"}'
 ```
 
 ---

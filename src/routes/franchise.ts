@@ -18,7 +18,7 @@ franchise.post('/', async (c) => {
     }, 400);
   }
 
-  const { platform, media_id, include_full_info } = validation.data;
+  const { platform, media_id, compact } = validation.data;
 
   try {
     const media = await fetchAniListMedia(media_id);
@@ -52,7 +52,7 @@ franchise.post('/', async (c) => {
       franchise: {
         id: `franchise_${media_id}`,
         name: unified.title.preferred,
-        entries: include_full_info !== false ? allEntries : allEntries.map(e => ({
+        entries: compact ? allEntries.map(e => ({
           id: e.id,
           id_mal: e.id_mal,
           id_anilist: e.id_anilist,
@@ -63,9 +63,9 @@ franchise.post('/', async (c) => {
           episodes: e.episodes,
           chapters: e.chapters,
           average_score: e.average_score,
-          cover_image: e.cover_image,
-          site_urls: e.site_urls,
-        })),
+          cover_image: e.cover_image?.medium || e.cover_image?.large || null,
+          start_date: e.start_date,
+        })) : allEntries,
         total_entries: allEntries.length,
       },
     });

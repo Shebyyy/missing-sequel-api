@@ -4,6 +4,8 @@ A high-performance API for [AnymeX](https://github.com/LalithJ959/AnymeX) that s
 
 Built with **Bun + Hono**, deployed via **Docker** with **GitHub Actions CI/CD**.
 
+**Live URL:** `http://anymex.duckdns.org:3002`
+
 ---
 
 ## Features
@@ -12,9 +14,10 @@ Built with **Bun + Hono**, deployed via **Docker** with **GitHub Actions CI/CD**
 - **Upcoming Sequels** — Lists upcoming releases related to the user's list
 - **Franchise Timeline** — Full franchise view for any media
 - **User Profiles** — Fetch user stats from AniList or MAL
-- **Status Tracking** — Track when media finishes airing/ publishing
+- **Status Tracking** — Track when media finishes airing/publishing
 - **Dual Platform** — Supports both AniList and MAL
 - **MAL Native API** — Uses MAL's own API (`/v2/anime/{id}`) for relations with 50-concurrent worker pool (~177 items/sec)
+- **Compact Mode** — All endpoints return lightweight responses by default (IDs, titles, covers). Set `compact: false` for full data
 - **SQLite + Volume** — Data persisted across container restarts
 - **API Key Auth** — Protected endpoints with `X-API-Key` header
 
@@ -58,8 +61,8 @@ Or trigger manually from **GitHub > Actions > Deploy Missing Sequel API > Run wo
 
 ### 3. Verify
 
-```bash
-curl https://your-vps-ip:3002/api/health
+```
+http://anymex.duckdns.org:3002/api/health
 ```
 
 ---
@@ -82,23 +85,13 @@ All env vars are injected at runtime via `docker-compose.yml`. The `.env` file o
 
 ## API Endpoints
 
+All protected endpoints accept `compact` (default: `true`) for lightweight responses.
+
 ### Public
 
 #### `GET /api/health`
 
-Health check endpoint.
-
-```json
-{
-  "success": true,
-  "status": "ok",
-  "version": "1.0.0",
-  "timestamp": "2025-01-01T00:00:00.000Z",
-  "uptime": 12345.678
-}
-```
-
----
+Health check — no auth required.
 
 ### Protected (require `X-API-Key` header)
 
@@ -106,147 +99,35 @@ Health check endpoint.
 
 Scan a user's list for missing sequels, prequels, spin-offs.
 
-**Headers:**
-```
-X-API-Key: your-api-key
-Content-Type: application/json
-```
-
-**Body:**
-```json
-{
-  "platform": "anilist",
-  "user_id": 12345,
-  "token": "optional-anilist-token-for-private-lists",
-  "media_type": "ALL",
-  "include_upcoming": true,
-  "include_adaptations": false,
-  "sort_by": "relation_priority"
-}
-```
-
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `platform` | `anilist` / `mal` | Yes | — | Platform to fetch list from |
-| `user_id` | `number` / `string` | Yes | — | User ID (AniList = number, MAL = username string) |
-| `token` | `string` | No | — | AniList/MAL token for private lists |
-| `media_type` | `ANIME` / `MANGA` / `ALL` | No | `ALL` | Which media type to scan |
-| `include_upcoming` | `boolean` | No | `true` | Include upcoming releases |
-| `include_adaptations` | `boolean` | No | `false` | Include anime↔manga adaptations |
-| `sort_by` | `relation_priority` / `release_date` / `popularity` / `score` | No | `relation_priority` | Sort order for results |
-
----
-
 #### `POST /api/upcoming`
 
-Get upcoming sequels only (shortcut for `/api/check` with `include_upcoming: true`).
-
-**Body:** Same as `/api/check` (minus `include_upcoming` and `sort_by` which are forced).
-
----
+Get upcoming sequels only.
 
 #### `POST /api/franchise`
 
 Get full franchise timeline for a specific media.
 
-**Body:**
-```json
-{
-  "platform": "anilist",
-  "media_id": 16498,
-  "include_full_info": true
-}
-```
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `platform` | `anilist` / `mal` | Yes | Platform |
-| `media_id` | `number` | Yes | AniList media ID |
-| `mal_id` | `number` | No | MAL media ID (alternative lookup) |
-| `include_full_info` | `boolean` | No | Include full media details (default: `true`) |
-
----
-
 #### `POST /api/user`
 
 Get user profile with list statistics.
 
-**Body:**
-```json
-{
-  "platform": "anilist",
-  "user_id": 12345,
-  "token": "optional-token-for-private-lists"
-}
-```
-
----
-
 #### `POST /api/status-check`
 
-Check media in the user's list that have finished airing/publishing but the user hasn't completed.
-
-**Body:**
-```json
-{
-  "platform": "anilist",
-  "user_id": 12345,
-  "token": "optional-token",
-  "media_type": "ANIME"
-}
-```
-
----
+Find media that finished airing/publishing but the user hasn't completed.
 
 #### `POST /api/status-track/register`
 
 Register for periodic status notifications.
 
-**Body:**
-```json
-{
-  "platform": "anilist",
-  "user_id": 12345,
-  "token": "user-anilist-token",
-  "media_type": "ANIME",
-  "webhook_url": "https://example.com/webhook",
-  "check_interval_hours": 6
-}
-```
-
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `token` | `string` | **Yes** | — | User's AniList/MAL token |
-| `webhook_url` | `string` | No | — | URL to send notifications |
-| `check_interval_hours` | `number` | No | `6` | Check interval (1–168 hours) |
-
----
-
 #### `POST /api/status-track/status`
 
 Get tracking status and recent notifications.
-
-**Body:**
-```json
-{
-  "platform": "anilist",
-  "user_id": 12345
-}
-```
-
----
 
 #### `POST /api/status-track/unregister`
 
 Stop status tracking for a user.
 
-**Body:**
-```json
-{
-  "platform": "anilist",
-  "user_id": 12345
-}
-```
+Full docs: [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md)
 
 ---
 
@@ -315,46 +196,6 @@ missing-sequel-api/
 ├── package.json
 └── tsconfig.json
 ```
-
----
-
-## Deployment
-
-### Architecture
-
-```
-GitHub Push → GitHub Actions → SCP files to VPS → SSH → docker compose up -d --build
-```
-
-### Port Mapping
-
-| Service | Port |
-|---|---|
-| Supabase (existing) | 3001 |
-| Missing Sequel API | **3002** |
-
-They are completely independent — different containers, different networks, different volumes.
-
-### Docker Details
-
-- **Image:** `oven/bun:1-slim`
-- **Volume:** `sequel-api-data` → `/app/data/` (SQLite database persists)
-- **Health check:** `GET http://localhost:3002/api/health` every 30s
-- **Restart policy:** `unless-stopped`
-- **Logs:** Rotated (10MB max, 3 files)
-
----
-
-## Performance
-
-| Metric | Value |
-|---|---|
-| List fetch (1625 anime) | ~9 seconds |
-| Relations enrichment (1863 media) | ~101 seconds |
-| Total processing time | ~110 seconds |
-| Throughput | ~177 items/second |
-| Concurrency | 50 parallel requests |
-| API used | MAL `/v2/anime/{id}` (native, no rate limit) |
 
 ---
 

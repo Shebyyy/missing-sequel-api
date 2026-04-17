@@ -17,7 +17,7 @@ upcoming.post('/', async (c) => {
     }, 400);
   }
 
-  const { platform, user_id, token, media_type } = validation.data;
+  const { platform, user_id, token, media_type, compact } = validation.data;
 
   try {
     const startTime = Date.now();
@@ -31,6 +31,34 @@ upcoming.post('/', async (c) => {
       sort_by: 'release_date',
     });
     const responseTime = Date.now() - startTime;
+
+    if (compact) {
+      return c.json({
+        success: true,
+        user: {
+          id: result.user.id,
+          username: result.user.username,
+          platform: result.user.platform,
+        },
+        upcoming: result.upcoming.map(u => ({
+          id: u.upcoming.id,
+          id_mal: u.upcoming.id_mal,
+          id_anilist: u.upcoming.id_anilist,
+          title: u.upcoming.title.preferred,
+          type: u.upcoming.type,
+          format: u.upcoming.format,
+          status: u.upcoming.status,
+          cover_image: u.upcoming.cover_image?.medium || u.upcoming.cover_image?.large || null,
+          episodes: u.upcoming.episodes,
+          chapters: u.upcoming.chapters,
+          start_date: u.upcoming.start_date,
+          relation: u.relation_type,
+          from_title: u.watched.title.preferred,
+        })),
+        total_upcoming: result.upcoming.length,
+        response_time_ms: responseTime,
+      });
+    }
 
     return c.json({
       success: true,

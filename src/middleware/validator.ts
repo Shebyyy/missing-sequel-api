@@ -8,6 +8,7 @@ export const checkRequestSchema = z.object({
   include_upcoming: z.boolean().optional().default(true),
   include_adaptations: z.boolean().optional().default(false),
   sort_by: z.enum(['relation_priority', 'release_date', 'popularity', 'score']).optional().default('relation_priority'),
+  compact: z.boolean().optional().default(true),
 });
 
 export const statusCheckRequestSchema = z.object({
@@ -15,13 +16,14 @@ export const statusCheckRequestSchema = z.object({
   user_id: z.union([z.number().int().positive(), z.string().min(1)]),
   token: z.string().optional(),
   media_type: z.enum(['ANIME', 'MANGA', 'ALL']).optional().default('ALL'),
+  compact: z.boolean().optional().default(true),
 });
 
 export const franchiseRequestSchema = z.object({
   platform: z.enum(['anilist', 'mal']),
   media_id: z.number().int().positive(),
   mal_id: z.number().int().positive().optional(),
-  include_full_info: z.boolean().optional().default(true),
+  compact: z.boolean().optional().default(true),
 });
 
 export const userInfoRequestSchema = z.object({
