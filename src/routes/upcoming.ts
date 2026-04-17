@@ -51,6 +51,7 @@ upcoming.post('/', async (c) => {
           cover_image: u.upcoming.cover_image?.medium || u.upcoming.cover_image?.large || null,
           episodes: u.upcoming.episodes,
           chapters: u.upcoming.chapters,
+          average_score: u.upcoming.average_score,
           start_date: u.upcoming.start_date,
           relation: u.relation_type,
           from_title: u.watched.title.preferred,

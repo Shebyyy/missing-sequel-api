@@ -46,6 +46,8 @@ statusCheck.post('/', async (c) => {
           cover_image: r.media.cover_image?.medium || r.media.cover_image?.large || null,
           episodes: r.media.episodes,
           chapters: r.media.chapters,
+          average_score: r.media.average_score,
+          start_date: r.media.start_date,
           user_status: r.user_status,
           progress: r.progress,
           remaining: r.remaining,
