@@ -94,7 +94,7 @@ query ($userId: Int, $type: MediaType) {
                 volumes
                 averageScore
                 popularity
-                coverImage { large medium color }
+                coverImage { extraLarge large medium color }
                 startDate { year month day }
                 season
                 seasonYear
@@ -132,7 +132,7 @@ query ($mediaId: Int) {
           id idMal type format status(version: 2)
           title { romaji english native }
           episodes chapters volumes averageScore popularity
-          coverImage { large medium color }
+          coverImage { extraLarge large medium color }
           startDate { year month day } season seasonYear
           source(version: 2) description(asHtml: false)
           genres tags { name rank }
