@@ -195,7 +195,7 @@ function createSkeletonFromMalRelation(
     trending: null,
     genres_rank: [],
     cover_image: {
-      extra_large: null,
+      extra_large: entry.node.main_picture?.large || null,
       large: entry.node.main_picture?.large || null,
       medium: entry.node.main_picture?.medium || null,
       color: null,
