@@ -149,6 +149,7 @@ async function processAniList(
     try {
       const { entries } = await fetchAniListUserList(params.user_id, type, params.token);
       for (const entry of entries) {
+        if (entry.listEntry.status !== 'COMPLETED') continue;
         const unified = formatAniListMedia(entry.media, entry.listEntry);
         watchedMap.set(entry.media.id, unified);
         buildMappingsFromMedia([entry.media]);
@@ -178,6 +179,7 @@ async function processMal(
     console.log(`[Processor] Got ${animeList.length} anime entries`);
 
     for (const entry of animeList) {
+      if (entry.list_status.status !== 'completed') continue;
       const unified = formatMalAnimeNode(entry.node, entry.list_status);
       watchedMap.set(entry.node.id, unified);
       animeIdsNeedingRelations.push(entry.node.id);
@@ -190,6 +192,7 @@ async function processMal(
     console.log(`[Processor] Got ${mangaList.length} manga entries`);
 
     for (const entry of mangaList) {
+      if (entry.list_status.status !== 'completed') continue;
       const unified = formatMalMangaNode(entry.node, entry.list_status);
       watchedMap.set(entry.node.id, unified);
       mangaIdsNeedingRelations.push(entry.node.id);
