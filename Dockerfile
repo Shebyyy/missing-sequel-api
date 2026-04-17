@@ -2,6 +2,9 @@
 FROM oven/bun:1 AS builder
 WORKDIR /app
 
+# Install Python + build tools for native modules (better-sqlite3)
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
@@ -12,7 +15,7 @@ COPY src/ ./src/
 FROM oven/bun:1-slim
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
+# Install dumb-init for proper signal handling + runtime libs for better-sqlite3
 RUN apt-get update && apt-get install -y --no-install-recommends dumb-init ca-certificates && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/node_modules ./node_modules
