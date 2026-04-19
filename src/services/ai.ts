@@ -66,10 +66,10 @@ async function callCerebras(messages: AiMessage[]): Promise<{ text: string; mode
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b',
+      model: 'llama3.1-8b',
       messages,
       temperature: 0.7,
-      max_tokens: 2048,
+      max_completion_tokens: 2048,
     }),
   });
 
@@ -82,7 +82,7 @@ async function callCerebras(messages: AiMessage[]): Promise<{ text: string; mode
   const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error('Cerebras returned empty response');
 
-  return { text, model: 'llama-3.3-70b' };
+  return { text, model: 'llama3.1-8b' };
 }
 
 // --- Groq ---
