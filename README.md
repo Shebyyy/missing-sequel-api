@@ -80,11 +80,12 @@ All env vars are injected at runtime via `docker-compose.yml`. The `.env` file o
 | `MAL_CLIENT_ID` | **Yes** | — | MAL API Client ID from [myanimelist.net/apiconfig](https://myanimelist.net/apiconfig) |
 | `API_KEY` | **Yes** | `dev-key` | API key for client authentication |
 | `APP_ID` | No | `anymex` | App identifier for rate limiting |
-| `GEMINI_API_KEY` | No* | — | Google AI Studio API key — primary AI (free) |
-| `CEREBRAS_API_KEY` | No* | — | Cerebras API key — fallback 1 (free) |
-| `GROQ_API_KEY` | No* | — | Groq API key — fallback 2 (free) |
+| `GEMINI_API_KEY` | No* | — | Google AI Studio — primary AI (free) |
+| `CEREBRAS_API_KEY` | No* | — | Cerebras — fallback 1 (free) |
+| `MISTRAL_API_KEY` | No* | — | Mistral AI — fallback 2 (free) |
+| `GROQ_API_KEY` | No* | — | Groq — fallback 3 (free) |
 
-*\* At least one AI key is required for the `/api/advise` endpoint. Fallback order: Gemini → Cerebras → Groq.*
+*\* At least one AI key is required for the `/api/advise` endpoint. Fallback order: Gemini → Cerebras → Mistral → Groq.*
 
 ---
 

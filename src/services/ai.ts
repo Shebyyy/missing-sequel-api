@@ -1,4 +1,4 @@
-// AI Service — Gemini (primary) → Cerebras (fallback 1) → Groq (fallback 2)
+// AI Service — Gemini → Cerebras → Mistral → Groq
 // All providers are free tier
 
 interface AiMessage {
@@ -8,7 +8,7 @@ interface AiMessage {
 
 interface AiResponse {
   text: string;
-  provider: 'gemini' | 'cerebras' | 'groq';
+  provider: 'gemini' | 'cerebras' | 'mistral' | 'groq';
   model: string;
   responseTimeMs: number;
 }
@@ -85,6 +85,38 @@ async function callCerebras(messages: AiMessage[]): Promise<{ text: string; mode
   return { text, model: 'llama3.1-8b' };
 }
 
+// --- Mistral AI ---
+
+async function callMistral(messages: AiMessage[]): Promise<{ text: string; model: string }> {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) throw new Error('MISTRAL_API_KEY not set');
+
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'mistral-small-latest',
+      messages,
+      temperature: 0.7,
+      max_tokens: 2048,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Mistral API error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Mistral returned empty response');
+
+  return { text, model: 'mistral-small-latest' };
+}
+
 // --- Groq ---
 
 async function callGroq(messages: AiMessage[]): Promise<{ text: string; model: string }> {
@@ -117,7 +149,7 @@ async function callGroq(messages: AiMessage[]): Promise<{ text: string; model: s
   return { text, model: 'llama-3.3-70b-versatile' };
 }
 
-// --- Main: Gemini → Cerebras → Groq ---
+// --- Main: Gemini → Cerebras → Mistral → Groq ---
 
 export async function askAi(messages: AiMessage[]): Promise<AiResponse> {
   // 1. Try Gemini first
@@ -148,11 +180,27 @@ export async function askAi(messages: AiMessage[]): Promise<AiResponse> {
         responseTimeMs: Date.now() - start,
       };
     } catch (err) {
-      console.error('⚠️ Cerebras failed, falling back to Groq:', err instanceof Error ? err.message : err);
+      console.error('⚠️ Cerebras failed, falling back to Mistral:', err instanceof Error ? err.message : err);
     }
   }
 
-  // 3. Last resort: Groq
+  // 3. Fallback to Mistral
+  if (process.env.MISTRAL_API_KEY) {
+    try {
+      const start = Date.now();
+      const result = await callMistral(messages);
+      return {
+        text: result.text,
+        provider: 'mistral',
+        model: result.model,
+        responseTimeMs: Date.now() - start,
+      };
+    } catch (err) {
+      console.error('⚠️ Mistral failed, falling back to Groq:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  // 4. Last resort: Groq
   if (process.env.GROQ_API_KEY) {
     try {
       const start = Date.now();
@@ -169,5 +217,5 @@ export async function askAi(messages: AiMessage[]): Promise<AiResponse> {
     }
   }
 
-  throw new Error('No AI API keys configured. Set GEMINI_API_KEY, CEREBRAS_API_KEY, or GROQ_API_KEY in environment.');
+  throw new Error('No AI API keys configured. Set GEMINI_API_KEY, CEREBRAS_API_KEY, MISTRAL_API_KEY, or GROQ_API_KEY in environment.');
 }

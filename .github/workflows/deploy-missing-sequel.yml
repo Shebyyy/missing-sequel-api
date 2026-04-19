@@ -64,6 +64,7 @@ jobs:
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
             CEREBRAS_API_KEY=${{ secrets.CEREBRAS_API_KEY }}
+            MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}
             ENVEOF
               echo "✅ .env created from secrets"
             else
@@ -88,6 +89,11 @@ jobs:
                 echo "CEREBRAS_API_KEY=${{ secrets.CEREBRAS_API_KEY }}" >> .env
               else
                 sed -i "s|^CEREBRAS_API_KEY=.*|CEREBRAS_API_KEY=${{ secrets.CEREBRAS_API_KEY }}|" .env
+              fi
+              if ! grep -q "MISTRAL_API_KEY" .env; then
+                echo "MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}" >> .env
+              else
+                sed -i "s|^MISTRAL_API_KEY=.*|MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}|" .env
               fi
               echo "✅ .env updated"
             fi
