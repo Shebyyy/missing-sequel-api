@@ -49,7 +49,7 @@ jobs:
           script: |
             cd /root/missing-sequel-api
 
-            echo "📦 Creating .env if missing..."
+            echo "📦 Setting up .env..."
             if [ ! -f .env ]; then
               cat > .env << 'ENVEOF'
             NODE_ENV=production
@@ -61,8 +61,29 @@ jobs:
             API_KEY=${{ secrets.API_KEY }}
             APP_ID=anymex
             DB_PATH=/app/data/sequel-api.db
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
             ENVEOF
               echo "✅ .env created from secrets"
+            else
+              echo "📝 Updating .env with latest secrets..."
+              # Update existing env vars with latest secret values
+              sed -i "s|^MAL_CLIENT_ID=.*|MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}|" .env
+              sed -i "s|^ANILIST_CLIENT_ID=.*|ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}|" .env
+              sed -i "s|^ANILIST_CLIENT_SECRET=.*|ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}|" .env
+              sed -i "s|^API_KEY=.*|API_KEY=${{ secrets.API_KEY }}|" .env
+              # Add AI keys if missing
+              if ! grep -q "GEMINI_API_KEY" .env; then
+                echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+              else
+                sed -i "s|^GEMINI_API_KEY=.*|GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}|" .env
+              fi
+              if ! grep -q "GROQ_API_KEY" .env; then
+                echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+              else
+                sed -i "s|^GROQ_API_KEY=.*|GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}|" .env
+              fi
+              echo "✅ .env updated"
             fi
 
             echo "🐳 Building Docker image..."

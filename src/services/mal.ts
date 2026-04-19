@@ -20,7 +20,7 @@ export class MalError extends Error {
   }
 }
 
-async function malFetch<T>(
+export async function malFetch<T>(
   path: string,
   token?: string,
 ): Promise<T> {

@@ -59,6 +59,21 @@ export const statusTrackUnregisterSchema = z.object({
   user_id: z.union([z.number().int().positive(), z.string().min(1)]),
 });
 
+export const adviseRequestSchema = z.object({
+  platform: z.enum(['anilist', 'mal']),
+  token: z.string().min(1),
+  question: z.string().min(1).max(1000),
+  user_id: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
+  conversation_history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string(),
+  })).max(20).optional(),
+}).refine(data => {
+  if (data.platform === 'mal' && !data.token) return false;
+  if (data.platform === 'anilist' && !data.user_id && !data.token) return false;
+  return true;
+}, { message: 'token is required for MAL; user_id or token is required for AniList' });
+
 export function validateRequest<T>(schema: z.ZodType<T>, body: unknown): { success: true; data: T } | { success: false; errors: z.ZodError } {
   const result = schema.safeParse(body);
   if (result.success) {

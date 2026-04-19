@@ -10,6 +10,7 @@ import franchise from './routes/franchise.js';
 import user from './routes/user.js';
 import statusCheck from './routes/status-check.js';
 import statusTrack from './routes/status-track.js';
+import advise from './routes/advise.js';
 
 // Middleware
 import { authMiddleware, loadApiKeys } from './middleware/auth.js';
@@ -37,6 +38,7 @@ protectedRoutes.route('/franchise', franchise);
 protectedRoutes.route('/user', user);
 protectedRoutes.route('/status-check', statusCheck);
 protectedRoutes.route('/status-track', statusTrack);
+protectedRoutes.route('/advise', advise);
 
 app.route('/api', protectedRoutes);
 
@@ -55,6 +57,7 @@ app.get('/', (c) => {
       'POST /api/status-track/register - Register for periodic status notifications',
       'POST /api/status-track/status - Get tracking status',
       'POST /api/status-track/unregister - Stop tracking',
+      'POST /api/advise - AI anime/manga advisor (Gemini + Groq)',
       'GET /api/health - API health check',
     ],
   });

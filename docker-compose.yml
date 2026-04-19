@@ -19,6 +19,8 @@ services:
       - ANILIST_CLIENT_SECRET=${ANILIST_CLIENT_SECRET}
       - API_KEY=${API_KEY}
       - APP_ID=${APP_ID:-anymex}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
     networks:
       - sequel-net
     logging:
