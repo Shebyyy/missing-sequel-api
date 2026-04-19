@@ -63,6 +63,7 @@ jobs:
             DB_PATH=/app/data/sequel-api.db
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+            CEREBRAS_API_KEY=${{ secrets.CEREBRAS_API_KEY }}
             ENVEOF
               echo "✅ .env created from secrets"
             else
@@ -82,6 +83,11 @@ jobs:
                 echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
               else
                 sed -i "s|^GROQ_API_KEY=.*|GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}|" .env
+              fi
+              if ! grep -q "CEREBRAS_API_KEY" .env; then
+                echo "CEREBRAS_API_KEY=${{ secrets.CEREBRAS_API_KEY }}" >> .env
+              else
+                sed -i "s|^CEREBRAS_API_KEY=.*|CEREBRAS_API_KEY=${{ secrets.CEREBRAS_API_KEY }}|" .env
               fi
               echo "✅ .env updated"
             fi
