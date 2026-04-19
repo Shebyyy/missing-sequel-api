@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { processCheck, ProcessorError } from '../services/processor.js';
 import { validateRequest, checkRequestSchema } from '../middleware/validator.js';
 import { verifyAniListToken } from '../services/anilist.js';
-import { fetchMalProfile } from '../services/mal.js';
+import { verifyMalToken } from '../services/mal.js';
 
 const check = new Hono();
 
@@ -20,15 +20,16 @@ check.post('/', async (c) => {
     }, 400);
   }
 
-  const { platform, user_id, token, media_type, include_upcoming, include_adaptations, sort_by, compact } = validation.data;
+  let { platform, user_id, token, media_type, include_upcoming, include_adaptations, sort_by, compact } = validation.data;
 
   try {
-    // Verify token if provided
     if (token) {
       if (platform === 'anilist') {
         try {
           const viewer = await verifyAniListToken(token);
-          if (viewer.id !== user_id) {
+          if (!user_id) {
+            user_id = viewer.id;
+          } else if (viewer.id !== user_id) {
             return c.json({
               success: false,
               error: 'TOKEN_MISMATCH',
@@ -46,7 +47,32 @@ check.post('/', async (c) => {
             code: 401,
           }, 401);
         }
+      } else if (platform === 'mal') {
+        try {
+          const malUser = await verifyMalToken(token!);
+          if (!user_id) {
+            user_id = malUser.name;
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return c.json({
+            success: false,
+            error: 'INVALID_TOKEN',
+            message: 'MAL token is invalid or has expired',
+            platform,
+            code: 401,
+          }, 401);
+        }
       }
+    }
+
+    if (!user_id) {
+      return c.json({
+        success: false,
+        error: 'MISSING_USER_ID',
+        message: 'Could not resolve user_id. Provide user_id or a valid token.',
+        code: 400,
+      }, 400);
     }
 
     const startTime = Date.now();
@@ -54,10 +80,10 @@ check.post('/', async (c) => {
       platform,
       user_id,
       token,
-      media_type,
-      include_upcoming,
-      include_adaptations,
-      sort_by,
+      media_type: media_type ?? 'ALL',
+      include_upcoming: include_upcoming ?? true,
+      include_adaptations: include_adaptations ?? false,
+      sort_by: sort_by ?? 'relation_priority',
     });
     const responseTime = Date.now() - startTime;
 

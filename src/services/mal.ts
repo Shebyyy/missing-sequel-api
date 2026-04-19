@@ -123,6 +123,12 @@ export async function fetchMalProfile(token: string): Promise<MalUserProfile> {
   return malFetch<MalUserProfile>('/users/@me', token);
 }
 
+export async function verifyMalToken(token: string): Promise<{ id: number; name: string }> {
+  const fields = 'name';
+  const profile = await malFetch<MalUserProfile>(`/users/@me?fields=${fields}`, token);
+  return { id: profile.id, name: profile.name };
+}
+
 export function malStatusToUnified(status: string): string {
   switch (status) {
     case 'finished': return 'FINISHED';

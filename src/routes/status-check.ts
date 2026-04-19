@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { checkUserMediaStatus } from '../services/statusTracker.js';
 import { validateRequest, statusCheckRequestSchema } from '../middleware/validator.js';
+import { verifyAniListToken } from '../services/anilist.js';
+import { verifyMalToken } from '../services/mal.js';
 
 const statusCheck = new Hono();
 
@@ -17,15 +19,58 @@ statusCheck.post('/', async (c) => {
     }, 400);
   }
 
-  const { platform, user_id, token, media_type, compact } = validation.data;
+  let { platform, user_id, token, media_type, compact } = validation.data;
 
   try {
+    if (token) {
+      if (platform === 'anilist') {
+        try {
+          const viewer = await verifyAniListToken(token);
+          if (!user_id) {
+            user_id = viewer.id;
+          }
+        } catch {
+          return c.json({
+            success: false,
+            error: 'INVALID_TOKEN',
+            message: 'Token is invalid or has expired',
+            platform,
+            code: 401,
+          }, 401);
+        }
+      } else if (platform === 'mal') {
+        try {
+          const malUser = await verifyMalToken(token!);
+          if (!user_id) {
+            user_id = malUser.name;
+          }
+        } catch {
+          return c.json({
+            success: false,
+            error: 'INVALID_TOKEN',
+            message: 'MAL token is invalid or has expired',
+            platform,
+            code: 401,
+          }, 401);
+        }
+      }
+    }
+
+    if (!user_id) {
+      return c.json({
+        success: false,
+        error: 'MISSING_USER_ID',
+        message: 'Could not resolve user_id. Provide user_id or a valid token.',
+        code: 400,
+      }, 400);
+    }
+
     const startTime = Date.now();
     const result = await checkUserMediaStatus({
       platform,
       user_id,
-      token,
-      media_type,
+      token: token!,
+      media_type: media_type ?? 'ALL',
     });
     const responseTime = Date.now() - startTime;
 

@@ -2,22 +2,30 @@ import { z } from 'zod';
 
 export const checkRequestSchema = z.object({
   platform: z.enum(['anilist', 'mal']),
-  user_id: z.union([z.number().int().positive(), z.string().min(1)]),
+  user_id: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
   token: z.string().optional(),
   media_type: z.enum(['ANIME', 'MANGA', 'ALL']).optional().default('ALL'),
   include_upcoming: z.boolean().optional().default(true),
   include_adaptations: z.boolean().optional().default(false),
   sort_by: z.enum(['relation_priority', 'release_date', 'popularity', 'score']).optional().default('relation_priority'),
   compact: z.boolean().optional().default(true),
-});
+}).refine(data => {
+  if (data.platform === 'mal' && !data.token) return false;
+  if (data.platform === 'anilist' && !data.user_id && !data.token) return false;
+  return true;
+}, { message: 'token is required for MAL; user_id or token is required for AniList' });
 
 export const statusCheckRequestSchema = z.object({
   platform: z.enum(['anilist', 'mal']),
-  user_id: z.union([z.number().int().positive(), z.string().min(1)]),
+  user_id: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
   token: z.string().optional(),
   media_type: z.enum(['ANIME', 'MANGA', 'ALL']).optional().default('ALL'),
   compact: z.boolean().optional().default(true),
-});
+}).refine(data => {
+  if (data.platform === 'mal' && !data.token) return false;
+  if (data.platform === 'anilist' && !data.user_id && !data.token) return false;
+  return true;
+}, { message: 'token is required for MAL; user_id or token is required for AniList' });
 
 export const franchiseRequestSchema = z.object({
   platform: z.enum(['anilist', 'mal']),
